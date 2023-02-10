@@ -16,11 +16,11 @@ GAME_TICK_SPEED = 60
 
 class Player(pygame.sprite.Sprite):
     
-    def __init__(self, velocity=2, x=0, y=0):
+    def __init__(self, velocity=2, x=0, y=0, rect=None):
         super(Player, self).__init__()
         self.surf = pygame.Surface((50, 50))
         self.surf.fill((255, 255, 255))
-        self.rect = self.surf.get_rect()
+        self.rect = self.surf.get_rect() if rect is None else rect
         self.rect.x = x
         self.rect.y = y
         self.velocity = velocity
@@ -43,3 +43,14 @@ class Player(pygame.sprite.Sprite):
             self.rect.top = 0
         if self.rect.bottom >= SCREEN_HEIGHT:
             self.rect.bottom = SCREEN_HEIGHT
+
+
+class Entity(pygame.sprite.Sprite):
+    
+    def __init__(self, rect):
+        super(Entity, self).__init__()
+        self.surf = pygame.Surface((50, 50))
+        self.surf.fill((255, 255, 255))
+        self.rect = self.surf.get_rect()
+        self.rect.x = rect.x
+        self.rect.y = rect.y

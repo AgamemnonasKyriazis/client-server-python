@@ -22,7 +22,7 @@ class NetworkInterface:
     def send(self, data):
         try:
             self.client.send(pickle.dumps(data))
-            response = self.client.recv(1024)
+            response = self.client.recv(2048)
             return pickle.loads(response)
         except:
             print("Transmission to server failed")

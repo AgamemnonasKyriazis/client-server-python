@@ -8,6 +8,7 @@ import signal
 
 HOST = ""
 PORT = 7777
+sprites_dict = dict()
 
 
 def handler(signum, frame):
@@ -26,10 +27,10 @@ def accept_connection(server:socket.socket):
     conn.send(pickle.dumps(client_id))
     next_client_id += 1
     selector.register(conn, selectors.EVENT_READ, receive)
-    active_clients[client_id] = conn
+    active_clients[conn] = client_id
 
 
-def receive(conn):
+def receive(conn: socket.socket):
     global selector
     reply = ""
     try:
@@ -37,11 +38,15 @@ def receive(conn):
         if not data:
             print("Client disconnected")
             selector.unregister(conn)
+            sprites_dict.pop(active_clients[conn])
+            active_clients.pop(conn)
             conn.close()
             return
         else:
             reply = pickle.loads(data)
-            conn.send(pickle.dumps(reply))
+            sprites_dict.update(reply)
+            print(sprites_dict)
+            conn.send(pickle.dumps(sprites_dict))
             print(f"Reply = {reply}")
     except:
         print("Error on receive")
@@ -69,5 +74,5 @@ if __name__ == "__main__":
     server.setblocking(False)
     selector.register(server, selectors.EVENT_READ, accept_connection)
     threading.Thread(target=main, daemon=True).start()
-    while True:
+    while running:
         pass

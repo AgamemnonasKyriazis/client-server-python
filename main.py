@@ -1,5 +1,6 @@
 import time
 import math
+import sys
 import socket
 import pygame
 import threading
@@ -19,6 +20,23 @@ from misc import *
 from network import NetworkInterface
 
 
+def update_server():
+    global running, local_sprites, remote_sprites
+    t0 = time.time_ns()
+    while running:
+        t1 = time.time_ns()
+        if abs(t1 - t0) >= 10000:
+            t0 = time.time_ns()
+            response = networkInterface.send({networkInterface.id: [entity.rect for entity in local_sprites]})
+            if response is not None:
+                remote_sprites.empty()
+                for client_key, rect_list in response.items():
+                    if client_key != networkInterface.id:
+                        for rect in rect_list:
+                            remote_sprites.add(Entity(rect))
+
+
+
 
 if __name__ == "__main__":
     pygame.init()
@@ -27,7 +45,7 @@ if __name__ == "__main__":
     clock = pygame.time.Clock()
     
     # Initialize network interface
-    networkInterface = NetworkInterface()
+    networkInterface = NetworkInterface(host="loukoumades.ddns.net", port=7777)
     response = networkInterface.connect()
     if response is None:
         pygame.quit()
@@ -38,13 +56,15 @@ if __name__ == "__main__":
     # Initialize player instance
     player = Player()
 
-    all_sprites = pygame.sprite.Group()
-    all_sprites.add(player)
+    local_sprites = pygame.sprite.Group()
+    remote_sprites = pygame.sprite.Group()
+    local_sprites.add(player)
 
     # Run until the user asks to quit
     running = True
-    while running:
-        
+    network_thread = threading.Thread(target=update_server)
+    network_thread.start()
+    while running: 
         # Did the user click the window close button?
         for event in pygame.event.get():
             # Did the user hit a key?
@@ -65,7 +85,13 @@ if __name__ == "__main__":
         # Update the player sprite based on user keypresses
         player.update(pressed_keys)
 
-        for entity in all_sprites:
+        #networkInterface.send(all_sprites)
+        
+
+        for entity in local_sprites:
+            screen.blit(entity.surf, entity.rect)
+
+        for entity in remote_sprites:
             screen.blit(entity.surf, entity.rect)
 
         # Flip the display
@@ -75,5 +101,6 @@ if __name__ == "__main__":
         deltaTime = clock.tick(GAME_TICK_SPEED)
 
     # Done! Time to quit.
+    network_thread.join()
     networkInterface.close()
     pygame.quit()
